@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services
+           http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <services>
+
+        <!-- DAL-Definition -->
+        <service id="Ruhrcoder\RcCartSharing\Core\Content\SharedCart\SharedCartDefinition">
+            <tag name="shopware.entity.definition" entity="rc_shared_cart"/>
+        </service>
+
+        <!-- Der Abzug eines Warenkorbs: zustandslos, ohne Abhängigkeiten. -->
+        <service id="Ruhrcoder\RcCartSharing\Service\CartSnapshotBuilder"/>
+
+        <!-- Die Kennung, unter der ein Warenkorb wiederzufinden ist. -->
+        <service id="Ruhrcoder\RcCartSharing\Service\ShareTokenGenerator"/>
+
+        <!-- Das Ablaufdatum. Reine Rechnung, deshalb ohne Uhr im Konstruktor. -->
+        <service id="Ruhrcoder\RcCartSharing\Service\ExpiryCalculator"/>
+
+        <!-- Die einzige Stelle, die schreibt. Public, damit der Integration-Test sie holen kann. -->
+        <service id="Ruhrcoder\RcCartSharing\Service\SharedCartWriter" public="true">
+            <argument type="service" id="rc_shared_cart.repository"/>
+            <argument type="service" id="Ruhrcoder\RcCartSharing\Service\CartSnapshotBuilder"/>
+            <argument type="service" id="Ruhrcoder\RcCartSharing\Service\ShareTokenGenerator"/>
+            <argument type="service" id="Ruhrcoder\RcCartSharing\Service\ExpiryCalculator"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+        </service>
+
+        <!-- Laden und Wiederherstellen -->
+        <service id="Ruhrcoder\RcCartSharing\Service\SharedCartLoader" public="true">
+            <argument type="service" id="rc_shared_cart.repository"/>
+        </service>
+
+        <service id="Ruhrcoder\RcCartSharing\Service\RestoreRequestBuilder"/>
+
+        <service id="Ruhrcoder\RcCartSharing\Service\CartRestorer" public="true">
+            <argument type="service" id="Ruhrcoder\RcCartSharing\Service\RestoreRequestBuilder"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\LineItemFactoryRegistry"/>
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="sales_channel.product.repository"/>
+        </service>
+
+        <!-- Die eigenen Warenkörbe im Kundenkonto -->
+        <service id="Ruhrcoder\RcCartSharing\Service\SharedCartManager" public="true">
+            <argument type="service" id="rc_shared_cart.repository"/>
+        </service>
+
+        <!-- Versand der Adresse. Feste Vorlage, kein Text vom Absender. -->
+        <service id="Ruhrcoder\RcCartSharing\Service\ShareMailer">
+            <argument type="service" id="Shopware\Core\Content\Mail\Service\MailService"/>
+            <argument type="service" id="translator"/>
+        </service>
+
+        <!-- Die Wege in der Storefront -->
+        <service id="Ruhrcoder\RcCartSharing\Storefront\Controller\SharedCartController" public="true">
+            <argument type="service" id="Shopware\Core\Checkout\Cart\SalesChannel\CartService"/>
+            <argument type="service" id="Ruhrcoder\RcCartSharing\Service\SharedCartWriter"/>
+            <argument type="service" id="Ruhrcoder\RcCartSharing\Service\SharedCartLoader"/>
+            <argument type="service" id="Ruhrcoder\RcCartSharing\Service\CartRestorer"/>
+            <argument type="service" id="Shopware\Core\Framework\RateLimiter\RateLimiter"/>
+            <argument type="service" id="Ruhrcoder\RcCartSharing\Service\ShareMailer"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+        </service>
+
+        <service id="Ruhrcoder\RcCartSharing\Storefront\Controller\SharedCartAccountController" public="true">
+            <argument type="service" id="Ruhrcoder\RcCartSharing\Service\SharedCartManager"/>
+            <argument type="service" id="Shopware\Storefront\Page\GenericPageLoader"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
+        </service>
+
+        <!-- Aufräumen abgelaufener Warenkörbe -->
+        <service id="Ruhrcoder\RcCartSharing\ScheduledTask\ExpiredSharedCartCleanupTask">
+            <tag name="shopware.scheduled.task"/>
+        </service>
+
+        <service id="Ruhrcoder\RcCartSharing\ScheduledTask\ExpiredSharedCartCleanupTaskHandler">
+            <argument type="service" id="scheduled_task.repository"/>
+            <argument type="service" id="logger"/>
+            <argument type="service" id="rc_shared_cart.repository"/>
+            <argument type="service" id="logger"/>
+            <tag name="messenger.message_handler"/>
+        </service>
+
+    </services>
+</container>

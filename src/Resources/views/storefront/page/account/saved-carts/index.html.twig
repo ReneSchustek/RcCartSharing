@@ -1,0 +1,62 @@
+{% sw_extends '@Storefront/storefront/page/account/_page.html.twig' %}
+
+{% block page_account_main_content %}
+    {% block page_account_rc_saved_carts %}
+        <div class="account-welcome rc-saved-carts">
+            <h1>{{ "rcCartSharing.account.headline"|trans }}</h1>
+            <p>{{ "rcCartSharing.account.intro"|trans }}</p>
+        </div>
+
+        {% if rcSharedCarts.count == 0 %}
+            {% block page_account_rc_saved_carts_empty %}
+                <div class="alert alert-info">
+                    {{ "rcCartSharing.account.empty"|trans }}
+                </div>
+            {% endblock %}
+        {% else %}
+            {% block page_account_rc_saved_carts_list %}
+                {% for sharedCart in rcSharedCarts %}
+                    <div class="card rc-saved-cart">
+                        <div class="card-body">
+                            <p class="rc-saved-cart-name">
+                                {{ sharedCart.name ?: "rcCartSharing.account.unnamed"|trans }}
+                                <small>{{ sharedCart.createdAt|format_date('medium', locale=app.request.locale) }}</small>
+                            </p>
+
+                            {# Nur lesbar: Der Kunde soll kopieren, nicht versehentlich eine
+                               Adresse verändern und dann eine verschicken, die nirgendwohin
+                               führt. #}
+                            <input type="text"
+                                   class="form-control rc-saved-cart-link"
+                                   readonly
+                                   onfocus="this.select()"
+                                   value="{{ url('frontend.rc-cart-sharing.load', { token: sharedCart.token }) }}">
+
+                            <div class="rc-saved-cart-actions">
+                                <form action="{{ path('frontend.account.rc-cart-sharing.rename') }}" method="post">
+                                    <input type="hidden" name="sharedCartId" value="{{ sharedCart.id }}">
+                                    <input type="text"
+                                           name="name"
+                                           class="form-control"
+                                           maxlength="255"
+                                           value="{{ sharedCart.name }}"
+                                           aria-label="{{ "rcCartSharing.account.renameLabel"|trans }}">
+                                    <button type="submit" class="btn btn-outline-secondary">
+                                        {{ "rcCartSharing.account.rename"|trans }}
+                                    </button>
+                                </form>
+
+                                <form action="{{ path('frontend.account.rc-cart-sharing.delete') }}" method="post">
+                                    <input type="hidden" name="sharedCartId" value="{{ sharedCart.id }}">
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        {{ "rcCartSharing.account.delete"|trans }}
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endblock %}
+        {% endif %}
+    {% endblock %}
+{% endblock %}

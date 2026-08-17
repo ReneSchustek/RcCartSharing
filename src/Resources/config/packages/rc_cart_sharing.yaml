@@ -1,0 +1,32 @@
+# Eigene Begrenzung für das Speichern von Warenkörben.
+#
+# Der Weg ist ohne Anmeldung erreichbar und legt je Aufruf eine Zeile an. Ohne Begrenzung genügt
+# eine Schleife, um die Tabelle zu füllen — und die Aufräum-Aufgabe läuft nur einmal am Tag.
+#
+# Die Staffel ist großzügig genug für den Kunden, der zweimal hintereinander speichert, weil er
+# den Namen ändern wollte, und eng genug, dass eine Maschine nicht durchkommt.
+shopware:
+    api:
+        rate_limiter:
+            rc_cart_sharing_save:
+                enabled: true
+                policy: 'time_backoff'
+                reset: '1 hour'
+                limits:
+                    - limit: 10
+                      interval: '60 seconds'
+                    - limit: 30
+                      interval: '600 seconds'
+
+            # Der Versand ist enger begrenzt als das Speichern: Eine Nachricht verlässt den Shop
+            # und trägt seine Absenderadresse. Drei in zehn Minuten reichen für den Kunden, der
+            # sich vertippt hat, und nicht für einen Verteiler.
+            rc_cart_sharing_send:
+                enabled: true
+                policy: 'time_backoff'
+                reset: '1 hour'
+                limits:
+                    - limit: 3
+                      interval: '600 seconds'
+                    - limit: 10
+                      interval: '86400 seconds'

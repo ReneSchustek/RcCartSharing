@@ -1,0 +1,45 @@
+{
+    "rcCartSharing": {
+        "save": {
+            "button": "Save and share cart",
+            "nameLabel": "Name for this cart",
+            "namePlaceholder": "for example: railing for the driveway",
+            "emptyCart": "Your cart is empty — there is nothing to save.",
+            "tooManyRequests": "You have saved several carts in a row. Please wait a moment."
+        },
+        "link": {
+            "caption": "Your cart has been saved. This link brings it back:",
+            "note": "Anyone opening the link gets the same items in their cart. Prices are recalculated."
+        },
+        "load": {
+            "unknownToken": "This link is no longer valid. Please ask for a new one.",
+            "nothingRestored": "None of the items in this cart could be added.",
+            "missingItems": "Not all items were still available. These were left out: %products%"
+        },
+        "send": {
+            "label": "Send the link by email",
+            "placeholder": "Recipient's email address",
+            "button": "Send link",
+            "done": "If the details are correct, the message is on its way."
+        },
+        "mail": {
+            "subject": "A cart has been shared with you",
+            "unnamedCart": "Unnamed cart",
+            "contentPlain": "Hello,\n\na cart has been shared with you: %name%\n\nThis link puts the same items into your own cart:\n%url%\n\nPrices are recalculated.",
+            "contentHtml": "<p>Hello,</p><p>a cart has been shared with you: <strong>%name%</strong></p><p>This link puts the same items into your own cart:<br><a href=\"%url%\">%url%</a></p><p>Prices are recalculated.</p>"
+        },
+        "account": {
+            "sidebarLink": "Saved carts",
+            "headline": "Saved carts",
+            "intro": "These are the carts you saved. Each one is reachable through its link — including for anyone you give it to.",
+            "empty": "You have not saved a cart yet.",
+            "unnamed": "Unnamed cart",
+            "rename": "Rename",
+            "renameLabel": "New name for this cart",
+            "delete": "Delete",
+            "renamed": "The cart has been renamed.",
+            "deleted": "The cart has been deleted.",
+            "notFound": "This cart does not exist."
+        }
+    }
+}

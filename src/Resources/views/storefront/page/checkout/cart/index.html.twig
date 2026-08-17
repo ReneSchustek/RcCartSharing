@@ -1,0 +1,83 @@
+{% sw_extends '@Storefront/storefront/page/checkout/cart/index.html.twig' %}
+
+{# Der Kasten steht über dem Warenkorb und bleibt stehen, bis der Kunde die Seite verlässt. Eine
+   Meldung, die nach drei Sekunden verschwindet, wäre für eine Adresse zum Kopieren die falsche
+   Form — sie ist das Ergebnis der Handlung, nicht ein Hinweis nebenbei. #}
+{% block page_checkout_main_content %}
+    {% set rcSharedCartToken = app.request.get('rcSharedCart') %}
+
+    {% if rcSharedCartToken %}
+        {% block page_checkout_cart_rc_share_link %}
+            <div class="rc-cart-sharing-link alert alert-success" role="status">
+                <p class="rc-cart-sharing-link-caption">
+                    {{ "rcCartSharing.link.caption"|trans }}
+                </p>
+
+                {# Nur lesbar und vorausgewählt: Der Kunde soll kopieren, nicht versehentlich
+                   etwas ändern und dann eine Adresse verschicken, die nirgendwohin führt. #}
+                <input type="text"
+                       class="form-control rc-cart-sharing-link-field"
+                       readonly
+                       onfocus="this.select()"
+                       value="{{ url('frontend.rc-cart-sharing.load', { token: rcSharedCartToken }) }}">
+
+                <p class="rc-cart-sharing-link-note">
+                    {{ "rcCartSharing.link.note"|trans }}
+                </p>
+
+                {# Verschickt wird eine feste Vorlage: Name des Warenkorbs und Adresse. Ein Feld
+                   „Ihre Nachricht" wäre bequem und wäre die Lücke — ein Formular, das beliebigen
+                   Text an beliebige Adressen schickt, ist ein Spam-Verteiler mit der
+                   Absenderadresse des Betriebs. #}
+                <form action="{{ path('frontend.rc-cart-sharing.send') }}" method="post" class="rc-cart-sharing-send-form">
+                    <input type="hidden" name="token" value="{{ rcSharedCartToken }}">
+
+                    <label class="form-label" for="rcCartSharingRecipient">
+                        {{ "rcCartSharing.send.label"|trans }}
+                    </label>
+
+                    <input type="email"
+                           id="rcCartSharingRecipient"
+                           name="recipient"
+                           class="form-control"
+                           required
+                           placeholder="{{ "rcCartSharing.send.placeholder"|trans }}">
+
+                    <button type="submit" class="btn btn-outline-primary">
+                        {{ "rcCartSharing.send.button"|trans }}
+                    </button>
+                </form>
+            </div>
+        {% endblock %}
+    {% endif %}
+
+    {{ parent() }}
+{% endblock %}
+
+{# Das Formular sitzt unter dem Warenkorb, neben den übrigen Handlungen. #}
+{% block page_checkout_cart_hidden_line_items_information %}
+    {{ parent() }}
+
+    {% block page_checkout_cart_rc_share_form %}
+        {% if page.cart.lineItems.count > 0 %}
+            <div class="rc-cart-sharing-form">
+                <form action="{{ path('frontend.rc-cart-sharing.save') }}" method="post" data-form-csrf-handler="true">
+                    <label class="form-label" for="rcCartSharingName">
+                        {{ "rcCartSharing.save.nameLabel"|trans }}
+                    </label>
+
+                    <input type="text"
+                           id="rcCartSharingName"
+                           name="rcCartSharingName"
+                           class="form-control"
+                           maxlength="255"
+                           placeholder="{{ "rcCartSharing.save.namePlaceholder"|trans }}">
+
+                    <button type="submit" class="btn btn-outline-primary rc-cart-sharing-save-button">
+                        {{ "rcCartSharing.save.button"|trans }}
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+    {% endblock %}
+{% endblock %}

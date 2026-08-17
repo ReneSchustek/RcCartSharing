@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
+
+    <card>
+        <title lang="de-DE">Gespeicherte Warenkörbe</title>
+        <title lang="en-GB">Saved carts</title>
+
+        <input-field type="int">
+            <name>expiryDays</name>
+            <label lang="de-DE">Haltbarkeit in Tagen</label>
+            <label lang="en-GB">Retention in days</label>
+            <helpText lang="de-DE">Nach dieser Zahl von Tagen wird ein gespeicherter Warenkorb gelöscht. Der Verweis darauf führt danach ins Leere. 0 bedeutet: kein Ablauf — dann wächst der Bestand unbegrenzt, und ein alter Verweis zeigt Preise von heute zu einem Warenkorb von damals.</helpText>
+            <helpText lang="en-GB">A saved cart is deleted after this number of days; its link then leads nowhere. 0 means no expiry — the table then grows without limit, and an old link shows today's prices for a cart from back then.</helpText>
+            <defaultValue>90</defaultValue>
+        </input-field>
+
+    </card>
+</config>

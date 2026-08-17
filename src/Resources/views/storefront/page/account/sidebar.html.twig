@@ -1,0 +1,16 @@
+{% sw_extends '@Storefront/storefront/page/account/sidebar.html.twig' %}
+
+{# Der Eintrag steht hinter den Bestellungen: Er gehört zur selben Sorte — Dinge, die der Kunde
+   angelegt hat und wiederfinden will. #}
+{% block page_account_sidebar_link_orders %}
+    {{ parent() }}
+
+    {% block page_account_sidebar_link_rc_saved_carts %}
+        <a href="{{ path('frontend.account.rc-cart-sharing.page') }}"
+           title="{{ 'rcCartSharing.account.sidebarLink'|trans|striptags }}"
+           class="list-group-item list-group-item-action account-aside-item{% if activeRoute is same as('frontend.account.rc-cart-sharing.page') %} is-active{% endif %}"
+           {% if activeRoute is same as('frontend.account.rc-cart-sharing.page') %} aria-current="page"{% endif %}>
+            {{ 'rcCartSharing.account.sidebarLink'|trans|sw_sanitize }}
+        </a>
+    {% endblock %}
+{% endblock %}

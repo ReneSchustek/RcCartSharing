@@ -1,0 +1,45 @@
+{
+    "rcCartSharing": {
+        "save": {
+            "button": "Warenkorb speichern und teilen",
+            "nameLabel": "Name für diesen Warenkorb",
+            "namePlaceholder": "zum Beispiel: Geländer Hofeinfahrt",
+            "emptyCart": "Ihr Warenkorb ist leer — es gibt nichts zu speichern.",
+            "tooManyRequests": "Sie haben gerade mehrere Warenkörbe hintereinander gespeichert. Bitte warten Sie einen Moment."
+        },
+        "link": {
+            "caption": "Ihr Warenkorb ist gespeichert. Über diese Adresse ist er wieder zu erreichen:",
+            "note": "Wer die Adresse aufruft, bekommt dieselben Artikel in seinen Warenkorb gelegt. Die Preise werden dabei neu berechnet."
+        },
+        "load": {
+            "unknownToken": "Dieser Verweis gilt nicht mehr. Bitte lassen Sie sich einen neuen schicken.",
+            "nothingRestored": "Aus diesem Warenkorb ließ sich kein Artikel mehr übernehmen.",
+            "missingItems": "Nicht alle Artikel waren noch zu haben. Nicht übernommen wurden: %products%"
+        },
+        "send": {
+            "label": "Adresse per E-Mail schicken",
+            "placeholder": "E-Mail-Adresse des Empfängers",
+            "button": "Verweis schicken",
+            "done": "Wenn die Angaben stimmen, ist die Nachricht unterwegs."
+        },
+        "mail": {
+            "subject": "Ein Warenkorb wurde mit Ihnen geteilt",
+            "unnamedCart": "Warenkorb ohne Namen",
+            "contentPlain": "Guten Tag,\n\nes wurde ein Warenkorb mit Ihnen geteilt: %name%\n\nÜber diese Adresse legen Sie sich dieselben Artikel in Ihren eigenen Warenkorb:\n%url%\n\nDie Preise werden dabei neu berechnet.",
+            "contentHtml": "<p>Guten Tag,</p><p>es wurde ein Warenkorb mit Ihnen geteilt: <strong>%name%</strong></p><p>Über diese Adresse legen Sie sich dieselben Artikel in Ihren eigenen Warenkorb:<br><a href=\"%url%\">%url%</a></p><p>Die Preise werden dabei neu berechnet.</p>"
+        },
+        "account": {
+            "sidebarLink": "Gespeicherte Warenkörbe",
+            "headline": "Gespeicherte Warenkörbe",
+            "intro": "Hier stehen die Warenkörbe, die Sie gespeichert haben. Jeder ist über seine Adresse erreichbar — auch für jemanden, dem Sie sie geben.",
+            "empty": "Sie haben noch keinen Warenkorb gespeichert.",
+            "unnamed": "Warenkorb ohne Namen",
+            "rename": "Umbenennen",
+            "renameLabel": "Neuer Name für diesen Warenkorb",
+            "delete": "Löschen",
+            "renamed": "Der Warenkorb wurde umbenannt.",
+            "deleted": "Der Warenkorb wurde gelöscht.",
+            "notFound": "Diesen Warenkorb gibt es nicht."
+        }
+    }
+}
