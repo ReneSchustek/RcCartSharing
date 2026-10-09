@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcCartSharing\Service;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Ruhrcoder\RcCartSharing\Core\Content\SharedCart\SharedCartCollection;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Defaults;
@@ -16,13 +17,14 @@ use Shopware\Core\System\SystemConfig\SystemConfigService;
 /**
  * Legt den Abzug eines Warenkorbs ab und gibt die Kennung zurück, unter der er wiederzufinden ist.
  *
- * Der Dienst schreibt und rechnet nicht: Der Abzug kommt vom {@see CartSnapshotBuilder}, die
+ * Der Dienst schreibt, rechnet aber nicht: Der Abzug kommt vom {@see CartSnapshotBuilder}, die
  * Kennung vom {@see ShareTokenGenerator}, das Ablaufdatum vom {@see ExpiryCalculator}. Was hier
- * bleibt, ist das Zusammensetzen — und genau deshalb ist es die einzige Stelle, die die Datenbank
- * anfasst.
+ * bleibt, ist das Zusammensetzen, und es ist die einzige Stelle, an der ein gespeicherter
+ * Warenkorb entsteht.
  */
 final class SharedCartWriter
 {
+    /** Das Feld `expiryDays` aus `config.xml`, je Verkaufskanal einstellbar. */
     public const CONFIG_EXPIRY_DAYS = 'RcCartSharing.config.expiryDays';
 
     /**
@@ -40,9 +42,12 @@ final class SharedCartWriter
     /**
      * Speichert den Warenkorb und gibt die Kennung zurück.
      *
-     * Der Kundenbezug wird nur gesetzt, wenn tatsächlich jemand angemeldet ist. Ein geteilter
-     * Warenkorb ohne Konto trägt damit **keinen** Personenbezug — das ist kein Zufall, sondern
-     * der Grund, warum er ohne Einwilligung entstehen darf.
+     * Der Kundenbezug wird nur gesetzt, wenn jemand angemeldet ist. Ein Warenkorb, der ohne Konto
+     * gespeichert wird, hängt damit an keinem Kundenkonto und erscheint in keiner Liste. Er ist
+     * nur über seine Kennung zu finden.
+     *
+     * Die Kennung wird nicht auf Eindeutigkeit geprüft; bei 160 Bit ist eine Wiederholung
+     * ausgeschlossen, und der eindeutige Schlüssel der Spalte wiese sie ab.
      */
     public function save(Cart $cart, SalesChannelContext $salesChannelContext, ?string $name = null): string
     {
@@ -52,7 +57,7 @@ final class SharedCartWriter
         $expiryDays = $this->expiryCalculator->readExpiryDays(
             $this->systemConfigService->get(self::CONFIG_EXPIRY_DAYS, $salesChannelId)
         );
-        $expiresAt = $this->expiryCalculator->expiresAt(new DateTimeImmutable(), $expiryDays);
+        $expiresAt = $this->expiryCalculator->expiresAt(new DateTimeImmutable('now', new DateTimeZone('UTC')), $expiryDays);
 
         $this->sharedCartRepository->create([[
             'id' => Uuid::randomHex(),
@@ -69,8 +74,8 @@ final class SharedCartWriter
 
     /**
      * Der Name ist frei eingegeben und erscheint später in der Liste im Kundenkonto. Leerraum am
-     * Rand und eine leere Eingabe werden zu „kein Name" — sonst steht dort eine Zeile, die
-     * aussieht, als fehle etwas.
+     * Rand und eine leere Eingabe werden zu „kein Name“, sonst steht dort eine Zeile, die aussieht,
+     * als fehle etwas. 255 Zeichen sind die Breite der Spalte `name`.
      */
     private function normalizeName(?string $name): ?string
     {

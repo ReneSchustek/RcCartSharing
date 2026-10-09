@@ -7,25 +7,6 @@ parameters:
         - vendor
     bootstrapFiles:
         - vendor/autoload.php
-    ignoreErrors:
-        # Shopware-6.8-Vorbereitung: `Field::addFlags()` bekommt in 6.8 einen `static`-Return-Type
-        # und ist deshalb heute als veraltet markiert. Der Aufruf ist unverändert richtig — es gibt
-        # nichts, worauf man vorher umstellen könnte. Löst sich mit der Anhebung der Mindestversion
-        # von selbst auf; vorher nichts umbauen.
-        -
-            message: '#Call to deprecated method addFlags\(\) of class Shopware\\Core\\Framework\\DataAbstractionLayer\\Field\\Field#'
-            path: src/Core/Content/SharedCart/SharedCartDefinition.php
-
-        # `EntitySearchResult` hört in 6.8 auf, eine Sammlung zu sein. Genau deshalb wird hier
-        # `getEntities()` aufgerufen statt direkt über das Ergebnis zu gehen — das ist der Weg,
-        # den 6.8 verlangt. Die Meldung trifft die Klasse, nicht den Aufruf; es gibt heute nichts,
-        # worauf man stattdessen umstellen könnte.
-        -
-            message: '#Call to method getEntities\(\) of deprecated class Shopware\\Core\\Framework\\DataAbstractionLayer\\Search\\EntitySearchResult#'
-            paths:
-                - src/Service/SharedCartLoader.php
-                - src/Service/SharedCartManager.php
-
     banned_code:
         nodes:
             -

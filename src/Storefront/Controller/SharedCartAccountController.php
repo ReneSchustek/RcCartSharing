@@ -17,8 +17,11 @@ use Symfony\Component\Routing\Attribute\Route;
  * Die gespeicherten Warenkörbe im Kundenkonto: ansehen, umbenennen, löschen.
  *
  * Jede Handlung geht über den {@see SharedCartManager}, und der prüft die Zugehörigkeit. Ein
- * fremder Warenkorb verhält sich hier wie ein nicht vorhandener — dieselbe Meldung, derselbe Weg
+ * fremder Warenkorb verhält sich hier wie ein nicht vorhandener: dieselbe Meldung, derselbe Weg
  * zurück. Alles andere verriete, dass es ihn gibt.
+ *
+ * Umbenennen und Löschen enden mit einer Weiterleitung auf die Liste, damit ein Neuladen der
+ * Seite das Formular nicht ein zweites Mal abschickt.
  */
 #[Route(defaults: ['_routeScope' => ['storefront'], '_loginRequired' => true])]
 final class SharedCartAccountController extends StorefrontController
@@ -91,7 +94,7 @@ final class SharedCartAccountController extends StorefrontController
 
     /**
      * `_loginRequired` hält den nicht angemeldeten Besucher schon vor dem Aufruf ab. Diese Prüfung
-     * ist die zweite Absicherung — und sie macht aus „vermutlich angemeldet" einen Typ, mit dem
+     * ist die zweite Absicherung, und sie macht aus „vermutlich angemeldet" einen Typ, mit dem
      * sich weiterarbeiten lässt.
      */
     private function requireCustomer(SalesChannelContext $salesChannelContext): CustomerEntity

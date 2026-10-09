@@ -11,25 +11,28 @@ use Shopware\Core\Checkout\Cart\LineItem\LineItemCollection;
 /**
  * Macht aus einem Warenkorb den Abzug, der gespeichert und geteilt wird.
  *
- * Der Abzug ist bewusst schmal: Artikelnummer, Menge, Art, Verweiskennung und die Nutzlast der
- * Position. Alles, was sich beim Wiederherstellen ohnehin neu ergibt — Preise, Bestand,
- * Anzeigetexte —, bleibt draußen. Ein gespeicherter Preis wäre eine Zusage, die niemand einlösen
+ * Der Abzug ist schmal: Kennung, Art, Verweiskennung, Artikelnummer, Menge, Nutzlast und Kinder
+ * der Position. Was sich beim Wiederherstellen ohnehin neu ergibt, also Preise, Bestand und
+ * Anzeigetexte, bleibt draußen. Ein gespeicherter Preis wäre eine Zusage, die niemand einlösen
  * will, sobald sie eine Woche alt ist.
  *
- * Die Nutzlast dagegen wird **vollständig** übernommen, abzüglich der Sperrliste. Das ist die
+ * Die Nutzlast wird dagegen vollständig übernommen, abzüglich der Sperrliste. Das ist die
  * tragende Entscheidung dieses Plugins: An unseren Positionen hängen Meterlänge, Farbe,
  * Kundeneingaben und Aufteilung, verteilt auf fünf Erweiterungen. Eine Positivliste müsste jede
- * davon kennen, und jede neue Erweiterung fiele stillschweigend heraus — genau der Fehler, wegen
- * dem dieses Plugin überhaupt gebaut wird. Unbekannte Schlüssel überleben deshalb im Zweifel.
+ * davon kennen, und eine neue Erweiterung fiele still heraus. Ein geteilter Warenkorb, der eine
+ * Kundeneingabe verliert, ist aber genau der Schaden, den das Plugin verhindern soll. Unbekannte
+ * Schlüssel überleben deshalb im Zweifel.
  */
 final class CartSnapshotBuilder
 {
     /**
      * Schlüssel, die Shopware beim Aufbau des Warenkorbs selbst wieder setzt.
      *
-     * Sie mitzuspeichern wäre nicht falsch, aber nutzlos: Der Produkt-Verarbeiter überschreibt sie
-     * bei jeder Berechnung. Sie blähen den Datensatz auf und lassen beim Lesen der Tabelle offen,
-     * welcher Wert nun gilt — der gespeicherte oder der gerechnete.
+     * Sie mitzuspeichern wäre nicht falsch, aber nutzlos: Der ProductCartProcessor schreibt sie
+     * beim Anreichern der Position neu, `features` kommt aus dem ProductFeatureBuilder. Sie blähen
+     * den Datensatz auf und lassen beim Lesen der Tabelle offen, welcher Wert nun gilt, der
+     * gespeicherte oder der gerechnete. Kommt im Kern ein Schlüssel hinzu, wird er nur unnötig
+     * mitgespeichert; verloren geht dabei nichts.
      *
      * @var list<string>
      */
@@ -94,15 +97,14 @@ final class CartSnapshotBuilder
             'id' => $lineItem->getId(),
             'type' => $lineItem->getType(),
             'referencedId' => $lineItem->getReferencedId(),
-            // Die Artikelnummer ist der Anker für den Fall, dass die Kennung nicht mehr gilt —
-            // etwa nach einem Umzug des Sortiments in einen neuen Shop.
+            // Die Artikelnummer steht oben im Abzug, aus der Nutzlast fliegt sie mit der Sperrliste.
+            // Sie ist das, was der Kunde in der Meldung über fehlende Artikel wiedererkennt.
             'productNumber' => $this->readProductNumber($payload),
             'quantity' => $lineItem->getQuantity(),
             'payload' => $this->cleanPayload($payload),
-            // Unsere Erweiterungen legen heute keine Kinder an — die Aufteilung der Meterware
-            // steht in der Nutzlast, nicht in Unterpositionen. Der Kern kennt Kinder trotzdem
-            // (Bündel, Rabatte in Sets), und sie hier wegzulassen hieße, einen Warenkorb still
-            // um einen Teil zu kürzen.
+            // Unsere Erweiterungen legen keine Kinder an, die Aufteilung der Meterware steht in der
+            // Nutzlast. Der Kern kennt Kinder trotzdem (Bündel, Rabatte in Sets), und sie hier
+            // wegzulassen hieße, einen Warenkorb still um einen Teil zu kürzen.
             'children' => $this->buildLineItems($lineItem->getChildren()),
         ];
     }

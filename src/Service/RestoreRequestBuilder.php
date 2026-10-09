@@ -6,27 +6,32 @@ namespace Ruhrcoder\RcCartSharing\Service;
 
 use Ruhrcoder\RcCartSharing\Struct\RestoreRequest;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
+use Shopware\Core\Framework\Uuid\Uuid;
 
 /**
  * Übersetzt den gespeicherten Abzug in das, was die Positions-Fabrik des Kerns erwartet.
  *
- * Reine Umformung: keine Datenbank, keine Dienste, kein Zustand. Alles, was am Wiederherstellen
- * schiefgehen kann, lässt sich damit ohne laufenden Shop prüfen.
+ * Reine Umformung: keine Datenbank, keine Dienste, kein Zustand. Was beim Lesen eines alten oder
+ * beschädigten Abzugs schiefgehen kann, lässt sich damit ohne laufenden Shop prüfen; ob es die
+ * Artikel noch gibt, entscheidet erst der {@see CartRestorer}.
  *
  * Die Kennung der Position wird durchgereicht statt neu erzeugt. Sie entsteht im Javascript aus
- * den Kundeneingaben und entscheidet, welche Positionen verschmelzen — nachgebaut in PHP wäre sie
+ * den Kundeneingaben und entscheidet, welche Positionen verschmelzen; nachgebaut in PHP wäre sie
  * die fehleranfälligste Stelle des Plugins. Die Fabrik verlangt für `id` nur einen String, also
  * genügt es, sie mitzunehmen.
+ *
+ * Eine Position, die sich nicht lesen lässt, fällt still weg, statt den ganzen Warenkorb
+ * scheitern zu lassen.
  */
 final class RestoreRequestBuilder
 {
     /**
      * Positionsarten, die aus einem geteilten Warenkorb wieder entstehen dürfen.
      *
-     * Rabatte, Gutscheine und Werbepositionen sind bewusst nicht dabei: Sie entstehen aus Regeln,
-     * die für den Empfänger andere sein können. Wer sie mitnähme, verschenkte einen Rabatt an
-     * jemanden, der ihn nicht hat — und der Kern entfernte ihn beim nächsten Rechnen ohnehin
-     * wieder, was aussieht, als sei etwas kaputt.
+     * Rabatte, Gutscheine und Werbepositionen fehlen hier: Sie entstehen aus Regeln, die für den
+     * Empfänger andere sein können. Wer sie mitnähme, verschenkte einen Rabatt an jemanden, der
+     * ihn nicht hat, und der Kern entfernte ihn beim nächsten Rechnen wieder, was aussieht, als
+     * sei etwas kaputt. Jede andere Art fällt ebenso weg, solange sie hier nicht steht.
      *
      * @var list<string>
      */
@@ -54,8 +59,11 @@ final class RestoreRequestBuilder
     }
 
     /**
-     * Die Artikelkennungen aller Positionen — die Vorprüfung braucht sie, um zu erkennen, welchen
-     * Artikel es noch gibt.
+     * Die Artikelkennungen aller Positionen samt Kindern, ohne Doppelte. Die Vorprüfung im
+     * {@see CartRestorer} fragt damit in einer Abfrage, welche Artikel es noch gibt.
+     *
+     * Nur Artikelpositionen: Bei einem Gutschein steht in `referencedId` der Code, und ein Code in
+     * der Abfrage nach Kennungen bricht sie mit einer Ausnahme ab, statt ihn als fehlend zu melden.
      *
      * @param list<array<string, mixed>> $snapshot
      *
@@ -67,7 +75,7 @@ final class RestoreRequestBuilder
 
         foreach ($snapshot as $item) {
             $referencedId = $item['referencedId'] ?? null;
-            if (is_string($referencedId) && $referencedId !== '') {
+            if (($item['type'] ?? null) === LineItem::PRODUCT_LINE_ITEM_TYPE && is_string($referencedId) && Uuid::isValid($referencedId)) {
                 $ids[] = $referencedId;
             }
 

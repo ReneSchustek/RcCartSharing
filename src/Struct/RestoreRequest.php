@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcCartSharing\Struct;
 
 /**
- * Eine Position aus dem Abzug, übersetzt in das, was die Positions-Fabrik des Kerns braucht —
- * plus die Angaben, die für den Bericht nötig sind.
+ * Eine Position aus dem Abzug, übersetzt in das, was die Positions-Fabrik des Kerns braucht, und
+ * dazu die Angaben, die für den Bericht nötig sind.
  *
- * Die Artikelnummer steht bewusst neben den Fabrikdaten und nicht darin: Die Fabrik prüft die
- * Daten, die sie bekommt, und ein zusätzlicher Schlüssel wäre bestenfalls wirkungslos. Für die
+ * Die Artikelnummer steht neben den Fabrikdaten und nicht darin: Die Fabrik prüft nur die
+ * Schlüssel, die sie kennt, und ein zusätzlicher Schlüssel wäre bestenfalls wirkungslos. Für die
  * Meldung „diese Position gibt es nicht mehr" ist die Nummer aber das Einzige, womit der Kunde
  * etwas anfangen kann.
  */
@@ -34,6 +34,7 @@ final class RestoreRequest
         return $this->data;
     }
 
+    /** Leer, wenn die Fabrikdaten keine Verweiskennung tragen; der Abgleich findet dann nichts. */
     public function getReferencedId(): string
     {
         $referencedId = $this->data['referencedId'] ?? '';

@@ -19,23 +19,31 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
- * Die zwei Wege der Erweiterung: Warenkorb speichern und Warenkorb aufrufen.
+ * Die drei Wege der Erweiterung ohne Anmeldung: Warenkorb speichern, Warenkorb aufrufen und den
+ * Verweis per E-Mail verschicken.
  *
- * Beide kommen ohne Javascript aus — ein gewöhnliches Formular und eine gewöhnliche Adresse. Wer
- * seinen Warenkorb an einen Kollegen schickt, sitzt oft in einem Umfeld, in dem Skripte blockiert
- * sind; ein Knopf, der dann nichts tut, ist schlimmer als keiner.
+ * Alle drei kommen ohne Javascript aus, mit gewöhnlichen Formularen und einer gewöhnlichen
+ * Adresse. Wer seinen Warenkorb an einen Kollegen schickt, sitzt oft in einem Umfeld, in dem
+ * Skripte blockiert sind; ein Knopf, der dann nichts tut, ist schlimmer als keiner.
+ *
+ * Jeder Weg endet auf der Warenkorbseite, auch der Aufruf eines Verweises: Dort sieht der Kunde,
+ * was angekommen ist.
  */
 #[Route(defaults: ['_routeScope' => ['storefront']])]
 final class SharedCartController extends StorefrontController
 {
     /**
      * Der Grenzwert bremst den einzelnen Absender, nicht alle Besucher gemeinsam. Ohne ihn legt
-     * ein Skript in einer Minute so viele Abzüge an, wie es Anfragen schafft.
+     * ein Skript in einer Minute so viele Abzüge an, wie es Anfragen schafft. Die Staffel steht in
+     * `Resources/config/packages/rc_cart_sharing.yaml`.
      */
     private const SAVE_LIMIT_ROUTE = 'rc_cart_sharing_save';
 
     /** Enger als beim Speichern: Eine Nachricht verlässt den Shop, ein Abzug bleibt darin. */
     private const SEND_LIMIT_ROUTE = 'rc_cart_sharing_send';
+
+    /** Dieselbe Zeichenfolge liest die Vorlage `checkout/cart/index.html.twig`. */
+    private const SESSION_LAST_TOKEN = 'rcCartSharing.lastToken';
 
     public function __construct(
         private readonly CartService $cartService,
@@ -56,6 +64,7 @@ final class SharedCartController extends StorefrontController
     {
         $cart = $this->cartService->getCart($salesChannelContext->getToken(), $salesChannelContext);
 
+        // Der leere Warenkorb wird vor der Begrenzung abgewiesen und verbraucht keinen Versuch.
         if ($cart->getLineItems()->count() === 0) {
             $this->addFlash(self::DANGER, $this->trans('rcCartSharing.save.emptyCart'));
 
@@ -73,8 +82,14 @@ final class SharedCartController extends StorefrontController
         $name = $request->request->get('rcCartSharingName');
         $token = $this->writer->save($cart, $salesChannelContext, is_string($name) ? $name : null);
 
-        // Die Adresse steht danach als Kasten über dem Warenkorb, nicht in einer Meldung, die
-        // nach ein paar Sekunden verschwindet: Sie ist das Ergebnis der Handlung.
+        // Die Vorlage zeigt den Kasten nur für die Kennung, die diese Sitzung gerade gespeichert hat.
+        // Sonst stünde jede Zeichenfolge aus einem zugeschickten Verweis als „Ihr gespeicherter
+        // Warenkorb“ da.
+        $request->getSession()->set(self::SESSION_LAST_TOKEN, $token);
+
+        // Die Adresse steht danach als Kasten über dem Warenkorb und nicht in einer Meldung, die
+        // beim nächsten Seitenaufruf fort ist: Sie ist das Ergebnis der Handlung. Die Vorlage
+        // liest die Kennung aus dem Parameter `rcSharedCart`.
         return $this->redirectToRoute('frontend.checkout.cart.page', ['rcSharedCart' => $token]);
     }
 
@@ -85,7 +100,7 @@ final class SharedCartController extends StorefrontController
     )]
     public function load(string $token, SalesChannelContext $salesChannelContext): Response
     {
-        $sharedCart = $this->loader->loadByToken($token, $salesChannelContext->getContext());
+        $sharedCart = $this->loader->loadByToken($token, $salesChannelContext);
 
         if ($sharedCart === null) {
             // Unbekannt und abgelaufen sind hier derselbe Fall. Der Unterschied wäre eine
@@ -99,14 +114,13 @@ final class SharedCartController extends StorefrontController
 
         if ($result->isEmpty()) {
             $this->addFlash(self::DANGER, $this->trans('rcCartSharing.load.nothingRestored'));
-
-            return $this->redirectToRoute('frontend.checkout.cart.page');
         }
 
         if ($result->hasMissingItems()) {
-            // Die Artikelnummern stehen ausdrücklich in der Meldung: Ein Warenkorb, der stumm um
-            // zwei Positionen kürzer zurückkommt, lässt den Kunden etwas anderes bestellen als
-            // besprochen — und er merkt es nicht.
+            // Die Artikelnummern stehen ausdrücklich in der Meldung, auch wenn gar nichts übernommen
+            // wurde: Ein Warenkorb, der stumm um zwei Positionen kürzer zurückkommt, lässt den
+            // Kunden etwas anderes bestellen als besprochen, ohne dass er es merkt. Positionen ohne
+            // Nummer fehlen in der Aufzählung, die Meldung selbst erscheint trotzdem.
             $this->addFlash(self::WARNING, $this->trans('rcCartSharing.load.missingItems', [
                 '%products%' => implode(', ', array_filter(
                     $result->getMissingProductNumbers(),
@@ -134,6 +148,8 @@ final class SharedCartController extends StorefrontController
         $answer = $this->redirectToRoute('frontend.checkout.cart.page');
         $this->addFlash(self::INFO, $this->trans('rcCartSharing.send.done'));
 
+        // Erst die Adresse, dann die Begrenzung: Ein Tippfehler im Empfänger kostet keinen der
+        // wenigen Versuche.
         if ($recipient === '' || filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
             return $answer;
         }
@@ -144,7 +160,7 @@ final class SharedCartController extends StorefrontController
             return $answer;
         }
 
-        $sharedCart = $this->loader->loadByToken($token, $salesChannelContext->getContext());
+        $sharedCart = $this->loader->loadByToken($token, $salesChannelContext);
         if ($sharedCart === null) {
             return $answer;
         }
@@ -160,11 +176,13 @@ final class SharedCartController extends StorefrontController
     }
 
     /**
-     * Schlüssel der Begrenzung ist die aufrufende Adresse — nicht die Sitzung: Eine neue Sitzung
-     * ist einen Aufruf entfernt und wäre keine Hürde.
+     * Schlüssel der Begrenzung ist die aufrufende IP-Adresse je Verkaufskanal und nicht die
+     * Sitzung: Eine neue Sitzung ist einen Aufruf entfernt und wäre keine Hürde. Hinter einem
+     * Proxy liefert getClientIp() nur dann den Besucher, wenn der Proxy als vertrauenswürdig
+     * eingetragen ist; sonst teilen sich alle Besucher einen Zähler.
      */
     private function limiterKey(Request $request, SalesChannelContext $salesChannelContext): string
     {
-        return ($request->getClientIp() ?? 'unbekannt') . '-' . $salesChannelContext->getSalesChannelId();
+        return ($request->getClientIp() ?? 'unknown') . '-' . $salesChannelContext->getSalesChannelId();
     }
 }

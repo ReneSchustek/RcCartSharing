@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.2.1] - 2026-10-09 — Sicherer Versand, keine Fehlerseiten mehr
+
+> **Deployment:** `php bin/console plugin:update RcCartSharing`, `php bin/console cache:clear`.
+
+### Behoben
+
+- **Der Name des Warenkorbs kann nichts mehr in die Mail einschleusen.** Er stand bisher im Text der
+  Mail-Vorlage, die Shopware als Vorlage ausführt; ein Name mit `{{ … }}` oder HTML landete
+  ausgeführt beziehungsweise ungefiltert in der Nachricht an den Empfänger. Name und Adresse kommen
+  jetzt als Werte dazu, der HTML-Teil wird dabei maskiert.
+- **Ein Warenkorb mit Gutschein lässt sich wieder aufrufen.** Der Gutscheincode geriet in die Suche
+  nach Artikeln, der Aufruf endete mit einer Fehlerseite.
+- **Eine ungültige Kennung im Kundenkonto führt nicht mehr zu einer Fehlerseite.** Umbenennen und
+  Löschen behandeln sie wie einen fremden Warenkorb.
+- **Ein geteilter Warenkorb gilt nur im Verkaufskanal, in dem er gespeichert wurde.**
+- **Der Kasten mit der Adresse erscheint nur für den eigenen, gerade gespeicherten Warenkorb.** Bisher
+  zeigte er jede Zeichenfolge aus der Adresse als „Ihr gespeicherter Warenkorb“ an.
+- **Ließ sich gar nichts übernehmen, nennt die Meldung jetzt auch die fehlenden Artikelnummern.**
+
+### Intern
+
+- Kommentare im ganzen Bestand überarbeitet, Bezeichner durchgehend englisch.
+- Deinstallation über die Datenbankverbindung des Kernels statt über den Container; Zeitangaben in UTC.
+- Zwei Ausnahmen in `phpstan.neon` entfernt, die unter 6.7.15 nichts mehr trafen.
+
 ## [0.2.0] - 2026-08-17 — Kundenkonto und Versand per E-Mail
 
 ### Neu

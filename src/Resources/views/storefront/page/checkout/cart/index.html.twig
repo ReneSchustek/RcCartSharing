@@ -1,12 +1,13 @@
 {% sw_extends '@Storefront/storefront/page/checkout/cart/index.html.twig' %}
 
-{# Der Kasten steht über dem Warenkorb und bleibt stehen, bis der Kunde die Seite verlässt. Eine
-   Meldung, die nach drei Sekunden verschwindet, wäre für eine Adresse zum Kopieren die falsche
-   Form — sie ist das Ergebnis der Handlung, nicht ein Hinweis nebenbei. #}
+{# Der Kasten steht über dem Warenkorb, solange der Parameter `rcSharedCart` in der Adresse steht,
+   also auch nach einem Neuladen. Eine Flash-Meldung wäre beim nächsten Seitenaufruf fort und für
+   eine Adresse zum Kopieren die falsche Form; sie ist das Ergebnis der Handlung, kein Hinweis
+   nebenbei. Angezeigt wird er nur für die Kennung, die diese Sitzung zuletzt gespeichert hat. #}
 {% block page_checkout_main_content %}
     {% set rcSharedCartToken = app.request.get('rcSharedCart') %}
 
-    {% if rcSharedCartToken %}
+    {% if rcSharedCartToken and rcSharedCartToken == app.request.session.get('rcCartSharing.lastToken') %}
         {% block page_checkout_cart_rc_share_link %}
             <div class="rc-cart-sharing-link alert alert-success" role="status">
                 <p class="rc-cart-sharing-link-caption">
@@ -26,7 +27,7 @@
                 </p>
 
                 {# Verschickt wird eine feste Vorlage: Name des Warenkorbs und Adresse. Ein Feld
-                   „Ihre Nachricht" wäre bequem und wäre die Lücke — ein Formular, das beliebigen
+                   „Ihre Nachricht" wäre bequem und wäre die Lücke. Ein Formular, das beliebigen
                    Text an beliebige Adressen schickt, ist ein Spam-Verteiler mit der
                    Absenderadresse des Betriebs. #}
                 <form action="{{ path('frontend.rc-cart-sharing.send') }}" method="post" class="rc-cart-sharing-send-form">
@@ -54,7 +55,8 @@
     {{ parent() }}
 {% endblock %}
 
-{# Das Formular sitzt unter dem Warenkorb, neben den übrigen Handlungen. #}
+{# Das Formular sitzt unter der Positionsliste, vor dem Feld für Artikelnummern und der
+   Versandkostenberechnung. Bei leerem Warenkorb fehlt es, der Server weist ihn ohnehin ab. #}
 {% block page_checkout_cart_hidden_line_items_information %}
     {{ parent() }}
 

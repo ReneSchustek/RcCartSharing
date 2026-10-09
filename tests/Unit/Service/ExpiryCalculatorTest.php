@@ -8,6 +8,11 @@ use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcCartSharing\Service\ExpiryCalculator;
 
+/**
+ * Prüft die Rechnung des Ablaufdatums und das Lesen der Einstellung. Ein Fehler hier löscht
+ * Warenkörbe zu früh oder lässt die Tabelle unbegrenzt wachsen, und beides fällt erst Wochen
+ * später auf.
+ */
 final class ExpiryCalculatorTest extends TestCase
 {
     private ExpiryCalculator $calculator;
@@ -19,6 +24,8 @@ final class ExpiryCalculatorTest extends TestCase
 
     public function testExpiryIsTheGivenNumberOfDaysAhead(): void
     {
+        // Ein fester Zeitpunkt statt der Uhr: Neunzig Tage später ist dann genau ein Datum, und
+        // der Test bleibt an jedem Tag gleich.
         $now = new DateTimeImmutable('2026-08-17 10:00:00');
 
         $expiresAt = $this->calculator->expiresAt($now, 90);

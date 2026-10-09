@@ -20,7 +20,8 @@
         <!-- Das Ablaufdatum. Reine Rechnung, deshalb ohne Uhr im Konstruktor. -->
         <service id="Ruhrcoder\RcCartSharing\Service\ExpiryCalculator"/>
 
-        <!-- Die einzige Stelle, die schreibt. Public, damit der Integration-Test sie holen kann. -->
+        <!-- Die einzige Stelle, die Warenkörbe anlegt. Umbenennen und Löschen liegen beim
+             SharedCartManager, das Aufräumen beim Handler der geplanten Aufgabe. -->
         <service id="Ruhrcoder\RcCartSharing\Service\SharedCartWriter" public="true">
             <argument type="service" id="rc_shared_cart.repository"/>
             <argument type="service" id="Ruhrcoder\RcCartSharing\Service\CartSnapshotBuilder"/>
@@ -82,6 +83,8 @@
 
         <service id="Ruhrcoder\RcCartSharing\ScheduledTask\ExpiredSharedCartCleanupTaskHandler">
             <argument type="service" id="scheduled_task.repository"/>
+            <!-- Zweimal derselbe Logger: der erste geht an ScheduledTaskHandler für Ausnahmen, der
+                 zweite meldet die Zahl der gelöschten Warenkörbe. -->
             <argument type="service" id="logger"/>
             <argument type="service" id="rc_shared_cart.repository"/>
             <argument type="service" id="logger"/>

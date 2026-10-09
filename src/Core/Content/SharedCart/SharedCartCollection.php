@@ -7,7 +7,8 @@ namespace Ruhrcoder\RcCartSharing\Core\Content\SharedCart;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityCollection;
 
 /**
- * Typisierte Sammlung für {@see SharedCartEntity}.
+ * Typisierte Sammlung für {@see SharedCartEntity}, damit Aufrufer ohne Prüfung auf den Eintragstyp
+ * an Kennung und Positionen kommen.
  *
  * @extends EntityCollection<SharedCartEntity>
  */

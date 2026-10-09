@@ -7,10 +7,12 @@ namespace Ruhrcoder\RcCartSharing\ScheduledTask;
 use Shopware\Core\Framework\MessageQueue\ScheduledTask\ScheduledTask;
 
 /**
- * Entfernt gespeicherte Warenkörbe, deren Ablaufdatum vorbei ist.
+ * Plant das Löschen gespeicherter Warenkörbe, deren Ablaufdatum vorbei ist; gelöscht wird in
+ * {@see ExpiredSharedCartCleanupTaskHandler}.
  *
- * Einmal am Tag genügt: Ein Warenkorb, der ein paar Stunden länger lebt als vorgesehen, schadet
- * niemandem — eine Tabelle, die jahrelang wächst, schon.
+ * Einmal am Tag genügt. Ein abgelaufener Warenkorb lässt sich schon vor dem Löschen nicht mehr
+ * aufrufen, weil der SharedCartLoader das Datum selbst prüft. Die Aufgabe hält nur die Tabelle
+ * klein, und dafür kommt es auf ein paar Stunden nicht an.
  */
 final class ExpiredSharedCartCleanupTask extends ScheduledTask
 {
@@ -21,6 +23,6 @@ final class ExpiredSharedCartCleanupTask extends ScheduledTask
 
     public static function getDefaultInterval(): int
     {
-        return 86400; // täglich
+        return 86400; // 24 Stunden in Sekunden
     }
 }

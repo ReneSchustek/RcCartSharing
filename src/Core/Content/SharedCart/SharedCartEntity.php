@@ -11,7 +11,8 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 use Shopware\Core\System\SalesChannel\SalesChannelEntity;
 
 /**
- * DAL-Entity des gespeicherten Warenkorbs. Anämisch — die Geschäftslogik liegt in den Diensten.
+ * Ein gespeicherter Warenkorb, wie er in `rc_shared_cart` steht. Die Klasse trägt nur Daten; was
+ * beim Speichern, Laden und Aufräumen gilt, entscheiden die Dienste unter `Service/`.
  */
 final class SharedCartEntity extends Entity
 {
@@ -23,13 +24,17 @@ final class SharedCartEntity extends Entity
 
     protected string $salesChannelId;
 
+    /** Leer bei einem Warenkorb, der ohne Anmeldung gespeichert wurde. */
     protected ?string $customerId = null;
 
     /**
+     * Der Abzug aus {@see \Ruhrcoder\RcCartSharing\Service\CartSnapshotBuilder}, ohne Preise.
+     *
      * @var list<array<string, mixed>>
      */
     protected array $lineItems = [];
 
+    /** Leer heißt: läuft nie ab, die Aufräum-Aufgabe lässt den Datensatz stehen. */
     protected ?DateTimeInterface $expiresAt = null;
 
     protected ?SalesChannelEntity $salesChannel = null;

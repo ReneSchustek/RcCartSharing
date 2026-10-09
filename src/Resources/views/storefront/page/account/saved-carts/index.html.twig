@@ -1,5 +1,8 @@
 {% sw_extends '@Storefront/storefront/page/account/_page.html.twig' %}
 
+{# Die gespeicherten Warenkörbe im Kundenkonto. Jede Zeile trägt ihren Verweis zum Kopieren und
+   zwei eigene Formulare, damit Umbenennen und Löschen ohne Javascript funktionieren. #}
+
 {% block page_account_main_content %}
     {% block page_account_rc_saved_carts %}
         <div class="account-welcome rc-saved-carts">
@@ -23,9 +26,9 @@
                                 <small>{{ sharedCart.createdAt|format_date('medium', locale=app.request.locale) }}</small>
                             </p>
 
-                            {# Nur lesbar: Der Kunde soll kopieren, nicht versehentlich eine
-                               Adresse verändern und dann eine verschicken, die nirgendwohin
-                               führt. #}
+                            {# Nur lesbar und beim Fokus ganz markiert: Der Kunde soll kopieren,
+                               nicht versehentlich eine Adresse verändern und dann eine verschicken,
+                               die nirgendwohin führt. #}
                             <input type="text"
                                    class="form-control rc-saved-cart-link"
                                    readonly

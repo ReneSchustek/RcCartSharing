@@ -1,10 +1,14 @@
 # Eigene Begrenzung für das Speichern von Warenkörben.
 #
 # Der Weg ist ohne Anmeldung erreichbar und legt je Aufruf eine Zeile an. Ohne Begrenzung genügt
-# eine Schleife, um die Tabelle zu füllen — und die Aufräum-Aufgabe läuft nur einmal am Tag.
+# eine Schleife, um die Tabelle zu füllen, und die Aufräum-Aufgabe löscht nur, was abgelaufen ist,
+# also frühestens nach der eingestellten Haltbarkeit.
 #
-# Die Staffel ist großzügig genug für den Kunden, der zweimal hintereinander speichert, weil er
-# den Namen ändern wollte, und eng genug, dass eine Maschine nicht durchkommt.
+# `time_backoff` liest die Staffel so: Die ersten zehn Aufrufe gehen ungebremst durch, bis zum
+# dreißigsten muss zwischen zwei Aufrufen eine Minute liegen, danach zehn Minuten. Eine Stunde nach
+# dem letzten angenommenen Aufruf beginnt die Zählung von vorn. Zehn freie Aufrufe reichen für den Kunden, der
+# mehrmals speichert, weil er den Namen ändern wollte; eine Maschine landet nach kurzer Zeit bei
+# einem Aufruf alle zehn Minuten.
 shopware:
     api:
         rate_limiter:
@@ -19,8 +23,9 @@ shopware:
                       interval: '600 seconds'
 
             # Der Versand ist enger begrenzt als das Speichern: Eine Nachricht verlässt den Shop
-            # und trägt seine Absenderadresse. Drei in zehn Minuten reichen für den Kunden, der
-            # sich vertippt hat, und nicht für einen Verteiler.
+            # und trägt seine Absenderadresse. Drei Nachrichten gehen sofort, bis zur zehnten liegen
+            # je zehn Minuten dazwischen, danach ein Tag. Das reicht für den Kunden, der sich
+            # vertippt hat, und nicht für einen Verteiler.
             rc_cart_sharing_send:
                 enabled: true
                 policy: 'time_backoff'

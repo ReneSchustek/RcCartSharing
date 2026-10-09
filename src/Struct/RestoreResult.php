@@ -12,6 +12,9 @@ use Shopware\Core\Framework\Struct\Struct;
  * Der Bericht ist kein Beiwerk: Ein Warenkorb, der stumm um zwei Positionen kürzer zurückkommt,
  * lässt den Kunden etwas anderes bestellen als besprochen, ohne dass er es merkt. Deshalb wird
  * gezählt, was ankam, und benannt, was nicht.
+ *
+ * Gezählt werden nur Positionen der obersten Ebene; ein weggefallenes Kind taucht im Bericht
+ * nicht auf.
  */
 final class RestoreResult extends Struct
 {

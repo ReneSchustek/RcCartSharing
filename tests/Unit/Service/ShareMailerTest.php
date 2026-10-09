@@ -10,85 +10,108 @@ use Ruhrcoder\RcCartSharing\Service\ShareMailer;
 use Shopware\Core\Content\Mail\Service\AbstractMailService;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
+use Symfony\Component\Mime\Email;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Geprüft wird, was den Shop verlässt: an wen, mit welchem Betreff, mit welchem Inhalt — und dass
- * aus dem frei eingegebenen Namen des Warenkorbs nichts in die Kopfzeilen der Nachricht gerät.
+ * Prüft, was den Shop verlässt: an wen, mit welchem Betreff und mit welchem Inhalt. Der frei
+ * eingegebene Name des Warenkorbs gelangt nur als eine kurze Zeile hinein, und nie in den Text der
+ * Vorlage selbst. Der Kern rendert den Inhalt als Twig; ein Name im Vorlagentext würde ausgeführt.
  */
 final class ShareMailerTest extends TestCase
 {
     public function testTheMessageCarriesRecipientSubjectAndLink(): void
     {
-        $versandt = [];
-        $mailer = new ShareMailer($this->mailService($versandt), $this->translator());
+        $sent = [];
+        $mailer = new ShareMailer($this->mailService($sent), $this->translator());
 
         $mailer->send('kunde@example.test', 'https://shop.test/rc-cart-sharing/load/abc', 'Geländer Hofeinfahrt', $this->salesChannelContext());
 
-        self::assertSame(['kunde@example.test' => 'kunde@example.test'], $versandt[0]['recipients']);
-        self::assertSame('rcCartSharing.mail.subject', $versandt[0]['subject']);
-        self::assertStringContainsString('https://shop.test/rc-cart-sharing/load/abc', $versandt[0]['contentPlain']);
-        self::assertStringContainsString('Geländer Hofeinfahrt', $versandt[0]['contentPlain']);
+        self::assertSame(['kunde@example.test' => 'kunde@example.test'], $sent[0]['data']['recipients']);
+        self::assertSame('rcCartSharing.mail.subject', $sent[0]['data']['subject']);
+        self::assertSame('https://shop.test/rc-cart-sharing/load/abc', $sent[0]['templateData']['rcSharedCart']['url']);
+        self::assertSame('Geländer Hofeinfahrt', $sent[0]['templateData']['rcSharedCart']['name']);
+        self::assertStringContainsString('{{ rcSharedCart.name }}', $sent[0]['data']['contentPlain']);
+        self::assertStringContainsString('{{ rcSharedCart.url }}', $sent[0]['data']['contentHtml']);
+    }
+
+    /**
+     * Was: Ein Name mit Twig-Ausdruck und HTML.
+     * Warum: Stünde er im Vorlagentext, führte der Kern `{{ … }}` aus und setzte das HTML ungefiltert
+     *        in die Mail an einen fremden Empfänger.
+     * Erwartet: Der Vorlagentext enthält nur den Platzhalter, der Name steht unverändert als Variable.
+     */
+    public function testANameNeverBecomesPartOfTheTemplate(): void
+    {
+        $sent = [];
+        $mailer = new ShareMailer($this->mailService($sent), $this->translator());
+        $name = '{{ salesChannel.name }} <a href="https://example.test">hier</a>';
+
+        $mailer->send('kunde@example.test', 'https://shop.test/x', $name, $this->salesChannelContext());
+
+        foreach (['contentHtml', 'contentPlain'] as $field) {
+            self::assertStringNotContainsString('salesChannel.name', $sent[0]['data'][$field]);
+            self::assertStringNotContainsString('<a href', $sent[0]['data'][$field]);
+        }
+        self::assertSame($name, $sent[0]['templateData']['rcSharedCart']['name']);
     }
 
     public function testAnUnnamedCartGetsAName(): void
     {
-        $versandt = [];
-        $mailer = new ShareMailer($this->mailService($versandt), $this->translator());
+        $sent = [];
+        $mailer = new ShareMailer($this->mailService($sent), $this->translator());
 
         $mailer->send('kunde@example.test', 'https://shop.test/x', null, $this->salesChannelContext());
 
-        self::assertStringContainsString('rcCartSharing.mail.unnamedCart', $versandt[0]['contentPlain']);
+        self::assertSame('rcCartSharing.mail.unnamedCart', $sent[0]['templateData']['rcSharedCart']['name']);
     }
 
     public function testLineBreaksInTheNameDoNotReachTheMessage(): void
     {
-        // Zeilenumbrüche in einem Betreff sind der klassische Weg, fremde Kopfzeilen
-        // einzuschleusen. Der Name kommt aus einem Eingabefeld — also einzeilig machen.
-        $versandt = [];
-        $mailer = new ShareMailer($this->mailService($versandt), $this->translator());
+        // Der Name kommt aus einem Eingabefeld und steht im Inhalt, nicht im Betreff. Einzeilig
+        // gemacht taugt er nicht dazu, einen eigenen Absatz in die Nachricht zu setzen.
+        $sent = [];
+        $mailer = new ShareMailer($this->mailService($sent), $this->translator());
 
         $mailer->send('kunde@example.test', 'https://shop.test/x', "Harmlos\r\nBcc: fremder@example.test", $this->salesChannelContext());
 
-        self::assertStringNotContainsString("\r", $versandt[0]['contentPlain']);
-        self::assertStringNotContainsString("\n", $versandt[0]['contentPlain']);
-        self::assertStringContainsString('Harmlos Bcc: fremder@example.test', $versandt[0]['contentPlain']);
+        self::assertSame('Harmlos Bcc: fremder@example.test', $sent[0]['templateData']['rcSharedCart']['name']);
     }
 
     public function testAnOverlongNameIsShortened(): void
     {
-        $versandt = [];
-        $mailer = new ShareMailer($this->mailService($versandt), $this->translator());
+        $sent = [];
+        $mailer = new ShareMailer($this->mailService($sent), $this->translator());
 
         $mailer->send('kunde@example.test', 'https://shop.test/x', str_repeat('a', 500), $this->salesChannelContext());
 
-        self::assertStringContainsString(str_repeat('a', 80), $versandt[0]['contentPlain']);
-        self::assertStringNotContainsString(str_repeat('a', 81), $versandt[0]['contentPlain']);
+        // 80 ist ShareMailer::MAX_NAME_LENGTH; die Konstante ist privat, daher die Zahl.
+        self::assertSame(str_repeat('a', 80), $sent[0]['templateData']['rcSharedCart']['name']);
     }
 
     /**
-     * @param array<int, array<string, mixed>> $versandt
+     * @param list<array{data: array<string, mixed>, templateData: array<string, mixed>}> $sent
      */
-    private function mailService(array &$versandt): AbstractMailService
+    private function mailService(array &$sent): AbstractMailService
     {
-        return new class ($versandt) extends AbstractMailService {
+        return new class ($sent) extends AbstractMailService {
             /**
-             * @param array<int, array<string, mixed>> $versandt
+             * @param list<array{data: array<string, mixed>, templateData: array<string, mixed>}> $sent
              */
-            public function __construct(private array &$versandt)
+            public function __construct(private array &$sent)
             {
-                // Die Eigenschaft wird nur geschrieben — gelesen wird sie über die Referenz im
-                // Test. Genau das ist ihr Zweck.
-                $this->versandt = &$versandt;
+                // Gelesen wird über die Referenz im Test; die Zuweisung per Referenz hält die
+                // Verbindung sichtbar.
+                $this->sent = &$sent;
             }
 
             /**
              * @param array<string, mixed> $data
              * @param array<string, mixed> $templateData
              */
-            public function send(array $data, Context $context, array $templateData = []): ?\Symfony\Component\Mime\Email
+            public function send(array $data, Context $context, array $templateData = []): ?Email
             {
-                $this->versandt[] = $data;
+                $this->sent[] = ['data' => $data, 'templateData' => $templateData];
 
                 return null;
             }
@@ -104,17 +127,16 @@ final class ShareMailerTest extends TestCase
     {
         return new class () implements TranslatorInterface {
             /**
-             * Gibt den Schlüssel und die eingesetzten Werte zurück. Der Test prüft, **was** in
-             * der Nachricht landet, nicht wie die Übersetzung formuliert ist — die steht in den
-             * Textbausteinen und ändert sich, ohne dass dieser Test rot werden soll.
+             * Gibt den Schlüssel und die eingesetzten Werte zurück. Der Test prüft, was in der
+             * Nachricht landet, nicht wie die Übersetzung formuliert ist.
              *
              * @param array<mixed> $parameters
              */
             public function trans(string $id, array $parameters = [], ?string $domain = null, ?string $locale = null): string
             {
-                $werte = array_map(static fn (mixed $value): string => (string) $value, $parameters);
+                $values = array_map(static fn (mixed $value): string => (string) $value, $parameters);
 
-                return trim($id . ' ' . implode(' ', $werte));
+                return trim($id . ' ' . implode(' ', $values));
             }
 
             public function getLocale(): string

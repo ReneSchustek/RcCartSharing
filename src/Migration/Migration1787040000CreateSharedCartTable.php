@@ -17,10 +17,13 @@ use Shopware\Core\Framework\Migration\MigrationStep;
  * nicht.
  *
  * Der Kundenbezug darf leer sein: Ein geteilter Warenkorb ohne Konto ist der Regelfall. Ist er
- * gesetzt, verschwindet der Datensatz mit dem Konto — der gespeicherte Warenkorb ist dann ein
- * personenbezogenes Datum.
+ * gesetzt, verschwindet der Datensatz mit dem Konto, weil er dann einer Person zugeordnet ist.
+ * Mit dem Verkaufskanal verschwindet er ebenso, denn ohne Kanal lässt er sich nicht mehr aufrufen.
  *
- * Vorwärts gerichtet — nach Veröffentlichung nicht mehr verändern.
+ * Die eindeutige Kennung trägt jeden Aufruf eines Verweises, der Index auf `expires_at` die
+ * tägliche Aufräum-Aufgabe, der auf `customer_id` die Liste im Kundenkonto.
+ *
+ * Eine ausgelieferte Migration bleibt unverändert; Änderungen am Schema kommen als neue Migration.
  */
 final class Migration1787040000CreateSharedCartTable extends MigrationStep
 {
@@ -57,6 +60,6 @@ final class Migration1787040000CreateSharedCartTable extends MigrationStep
 
     public function updateDestructive(Connection $connection): void
     {
-        // Aufräumen läuft ausschließlich über uninstall(keepUserData=false).
+        // Die Tabelle entfernt nur die Deinstallation ohne „Daten behalten“, siehe RcCartSharing::uninstall().
     }
 }

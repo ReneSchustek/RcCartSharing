@@ -35,6 +35,10 @@ final class CartRestorer
     ) {
     }
 
+    /**
+     * Gezählt werden die übernommenen Positionen der obersten Ebene. Eine fehlende Position ohne
+     * Artikelnummer steht als leerer Text in der Liste der fehlenden; die Meldung lässt sie aus.
+     */
     public function restore(SharedCartEntity $sharedCart, SalesChannelContext $salesChannelContext): RestoreResult
     {
         $snapshot = $sharedCart->getLineItems();
@@ -44,6 +48,8 @@ final class CartRestorer
             return new RestoreResult(0, []);
         }
 
+        // Eine Abfrage für alle Artikel samt Kindern statt einer je Position: Ein Warenkorb mit
+        // vierzig Positionen soll nicht vierzig Mal die Datenbank fragen.
         $availableProductIds = $this->findAvailableProductIds(
             $this->requestBuilder->collectProductIds($snapshot),
             $salesChannelContext
@@ -62,6 +68,8 @@ final class CartRestorer
             $lineItems[] = $this->createLineItem($request, $availableProductIds, $salesChannelContext);
         }
 
+        // Ein einziger Aufruf von add() für alle Positionen: Jeder Aufruf rechnet den ganzen
+        // Warenkorb neu.
         if ($lineItems !== []) {
             $cart = $this->cartService->getCart($salesChannelContext->getToken(), $salesChannelContext);
             $this->cartService->add($cart, $lineItems, $salesChannelContext);
@@ -93,9 +101,9 @@ final class CartRestorer
     /**
      * Welche der gespeicherten Artikel gibt es im Verkaufskanal noch?
      *
-     * Über das Verkaufskanal-Repository, nicht über das Verwaltungs-Repository: Sichtbarkeit und
-     * Freigabe für genau diesen Kanal entscheiden mit. Ein Artikel, den es nur in einem anderen
-     * Kanal gibt, ist für diesen Kunden nicht vorhanden.
+     * Über das Verkaufskanal-Repository, nicht über das Verwaltungs-Repository: Es hängt den Filter
+     * für aktive, in diesem Kanal sichtbare Artikel an (mindestens Sichtbarkeit „per Link“). Ein
+     * Artikel, den es nur in einem anderen Kanal gibt, ist für diesen Kunden nicht vorhanden.
      *
      * @param list<string> $productIds
      *

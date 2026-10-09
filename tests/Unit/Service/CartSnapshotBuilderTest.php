@@ -11,10 +11,12 @@ use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 use Shopware\Core\Checkout\Cart\LineItem\LineItemCollection;
 
 /**
+ * Prüft, was der Abzug von einer Position behält und was er weglässt.
+ *
  * Der Abzug ist nur so viel wert wie das, was er von den Positionen behält. Jede der fünf
- * Erweiterungen, die in die Nutzlast schreibt, bekommt hier ihre eigene Zusicherung — sonst fällt
- * ein Verlust erst auf, wenn ein Kunde einen geteilten Warenkorb bestellt und etwas anderes
- * bekommt als besprochen.
+ * Erweiterungen, die in die Nutzlast schreibt, bekommt hier eine eigene Zusicherung auf ihre
+ * Schlüssel. Sonst fällt ein Verlust erst auf, wenn ein Kunde einen geteilten Warenkorb bestellt
+ * und etwas anderes bekommt als besprochen.
  */
 final class CartSnapshotBuilderTest extends TestCase
 {
@@ -115,6 +117,8 @@ final class CartSnapshotBuilderTest extends TestCase
 
     public function testSnapshotDropsWhatShopwareRecalculates(): void
     {
+        // `productNumber` fehlt danach nur in der Nutzlast; oben im Abzug steht sie weiter, siehe
+        // testSnapshotKeepsTypeQuantityAndReference().
         $cart = $this->cartWith($this->productLineItem('line-1', 'product-id', 1, [
             'productNumber' => 'SW10001',
             'purchasePrices' => '{"net":10}',
@@ -134,8 +138,11 @@ final class CartSnapshotBuilderTest extends TestCase
         self::assertSame(2000, $payload['meterLengthMm'], 'Die eigene Nutzlast bleibt unberührt.');
     }
 
-    public function testSnapshotKeepsSplitChildren(): void
+    public function testSnapshotKeepsChildLineItemsWithTheirPayload(): void
     {
+        // Die eigenen Erweiterungen legen keine Kinder an, die Aufteilung steht in der Nutzlast.
+        // Die Kinder hier stehen für die Strukturen des Kerns, etwa Bündel; geprüft wird, dass
+        // der Abzug sie mit ihrer Nutzlast übernimmt.
         $parent = $this->productLineItem('line-1', 'product-id', 1, ['meterLengthMm' => 5100]);
         $parent->addChild($this->productLineItem('child-1', 'product-id', 1, ['meterLengthMm' => 5000]));
         $parent->addChild($this->productLineItem('child-2', 'product-id', 1, ['meterLengthMm' => 100]));

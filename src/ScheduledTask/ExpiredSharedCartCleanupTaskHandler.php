@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ruhrcoder\RcCartSharing\ScheduledTask;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Psr\Log\LoggerInterface;
 use Ruhrcoder\RcCartSharing\Core\Content\SharedCart\SharedCartCollection;
 use Shopware\Core\Defaults;
@@ -23,12 +24,18 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
  *
  * Löscht abgelaufene Warenkörbe in Blöcken statt in einem Rutsch. Ein Shop, in dem die
  * Aufräum-Aufgabe monatelang stillstand, hätte sonst einen einzigen Lauf mit zehntausenden
- * Datensätzen — und der räumt entweder gar nicht auf oder sperrt die Tabelle so lange, dass
- * niemand mehr speichern kann.
+ * Datensätzen. Der räumt entweder gar nicht auf oder sperrt die Tabelle so lange, dass niemand
+ * mehr speichern kann.
+ *
+ * Zwei Logger, weil der erste der Elternklasse gehört und dort nur Ausnahmen aufnimmt.
  */
 #[AsMessageHandler(handles: ExpiredSharedCartCleanupTask::class)]
 final class ExpiredSharedCartCleanupTaskHandler extends ScheduledTaskHandler
 {
+    /**
+     * Ein Block von 500 Datensätzen ist eine kurze Löschanweisung, die die Tabelle nur kurz sperrt,
+     * und ein Rückstand von zehntausend Warenkörben ist trotzdem nach zwanzig Durchläufen abgebaut.
+     */
     private const BATCH_SIZE = 500;
 
     /**
@@ -47,7 +54,7 @@ final class ExpiredSharedCartCleanupTaskHandler extends ScheduledTaskHandler
     public function run(): void
     {
         $context = Context::createCLIContext();
-        $now = (new DateTimeImmutable())->format(Defaults::STORAGE_DATE_TIME_FORMAT);
+        $now = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(Defaults::STORAGE_DATE_TIME_FORMAT);
 
         $criteria = new Criteria();
         // Ohne Ablaufdatum bedeutet „unbegrenzt gültig" — solche Datensätze dürfen der Aufräum-
@@ -61,6 +68,9 @@ final class ExpiredSharedCartCleanupTaskHandler extends ScheduledTaskHandler
 
         $deleted = 0;
 
+        // Die Suche fängt bei jedem Durchlauf wieder vorne an und braucht keinen Versatz: Was der
+        // vorige Durchlauf gefunden hat, ist gelöscht. Ein kürzerer Block als BATCH_SIZE heißt,
+        // dass nichts mehr übrig ist.
         do {
             $ids = $this->sharedCartRepository->searchIds($criteria, $context)->getIds();
             if ($ids === []) {

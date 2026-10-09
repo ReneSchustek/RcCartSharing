@@ -22,9 +22,13 @@ use Shopware\Core\System\SalesChannel\SalesChannelDefinition;
 /**
  * DAL-Definition für `rc_shared_cart`.
  *
- * Bewusst **ohne** `ApiAware`: Der Abzug enthält die Kundeneingaben eines Warenkorbs. Über die
- * Store-API abrufbar wäre er ein Weg, mit geratenen Kennungen fremde Eingaben zu lesen. Gelesen
- * wird ausschließlich über den eigenen Storefront-Weg, der die Kennung prüft.
+ * Kein Feld trägt `ApiAware`. Der Abzug enthält die Kundeneingaben eines Warenkorbs, und die
+ * Serialisierer der Admin- und Store-API lassen jedes Feld ohne diese Markierung weg. Gelesen wird
+ * nur über den eigenen Storefront-Weg, der die Kennung verlangt.
+ *
+ * Die Spalte für die Kennung fasst 64 Zeichen, erzeugt werden 32 (siehe
+ * {@see \Ruhrcoder\RcCartSharing\Service\ShareTokenGenerator::TOKEN_LENGTH}). Ungenutzter Platz
+ * kostet in `VARCHAR` nichts, und eine längere Kennung bräuchte keine Migration.
  */
 final class SharedCartDefinition extends EntityDefinition
 {

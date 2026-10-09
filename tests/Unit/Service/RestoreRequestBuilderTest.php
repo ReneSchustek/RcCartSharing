@@ -8,8 +8,17 @@ use PHPUnit\Framework\TestCase;
 use Ruhrcoder\RcCartSharing\Service\RestoreRequestBuilder;
 use Shopware\Core\Checkout\Cart\LineItem\LineItem;
 
+/**
+ * Prüft die Umformung des gespeicherten Abzugs in Daten für die Positions-Fabrik. Geht hier eine
+ * Kennung oder Kundeneingabe verloren, landet beim Empfänger ein anderer Warenkorb als der
+ * geteilte; nimmt die Umformung zu viel mit, bekommt er einen Rabatt, der ihm nicht zusteht.
+ */
 final class RestoreRequestBuilderTest extends TestCase
 {
+    private const PRODUCT_A = '0190a1b2c3d4e5f60718293a4b5c6d7e';
+
+    private const PRODUCT_B = '0190a1b2c3d4e5f60718293a4b5c6d7f';
+
     private RestoreRequestBuilder $builder;
 
     protected function setUp(): void
@@ -97,6 +106,8 @@ final class RestoreRequestBuilderTest extends TestCase
 
     public function testAnImpossibleQuantityBecomesOne(): void
     {
+        // Mit einer Menge unter eins würfe schon der Konstruktor von LineItem eine Ausnahme, und
+        // der ganze Aufruf des Verweises scheiterte an einer einzigen Zeile.
         $requests = $this->builder->build([$this->snapshotItem(['quantity' => 0])]);
 
         self::assertSame(1, $requests[0]->getData()['quantity']);
@@ -105,14 +116,30 @@ final class RestoreRequestBuilderTest extends TestCase
     public function testProductIdsAreCollectedAcrossChildrenAndWithoutDuplicates(): void
     {
         $ids = $this->builder->collectProductIds([
-            $this->snapshotItem(['referencedId' => 'artikel-a']),
+            $this->snapshotItem(['referencedId' => self::PRODUCT_A]),
             $this->snapshotItem([
-                'referencedId' => 'artikel-b',
-                'children' => [$this->snapshotItem(['referencedId' => 'artikel-a'])],
+                'referencedId' => self::PRODUCT_B,
+                'children' => [$this->snapshotItem(['referencedId' => self::PRODUCT_A])],
             ]),
         ]);
 
-        self::assertSame(['artikel-a', 'artikel-b'], $ids);
+        self::assertSame([self::PRODUCT_A, self::PRODUCT_B], $ids);
+    }
+
+    /**
+     * Was: Ein Warenkorb mit Gutscheinposition.
+     * Warum: Dort steht in `referencedId` der Code. In der Abfrage nach Artikelkennungen warf er eine
+     *        Ausnahme, und der Aufruf des Verweises endete mit Fehler 500.
+     * Erwartet: Nur die Kennung des Artikels wird gesammelt.
+     */
+    public function testAPromotionCodeIsNotCollectedAsProductId(): void
+    {
+        $ids = $this->builder->collectProductIds([
+            $this->snapshotItem(['referencedId' => self::PRODUCT_A]),
+            $this->snapshotItem(['type' => LineItem::PROMOTION_LINE_ITEM_TYPE, 'referencedId' => 'SOMMER10']),
+        ]);
+
+        self::assertSame([self::PRODUCT_A], $ids);
     }
 
     /**
@@ -125,7 +152,7 @@ final class RestoreRequestBuilderTest extends TestCase
         return array_merge([
             'id' => 'position-1',
             'type' => LineItem::PRODUCT_LINE_ITEM_TYPE,
-            'referencedId' => 'artikel-a',
+            'referencedId' => self::PRODUCT_A,
             'productNumber' => 'SW10001',
             'quantity' => 1,
             'payload' => [],
