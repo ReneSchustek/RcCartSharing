@@ -21,9 +21,9 @@ use Shopware\Core\System\SalesChannel\SalesChannelContext;
  * Raten grundsätzlich zum Ziel führt. Für den Kunden ändert sich nichts, denn beide Fälle enden
  * an derselben Stelle.
  *
- * Gesucht wird nur über die Kennung, ohne Verkaufskanal. Ein Verweis aus einem Kanal lässt sich
- * daher auch in einem anderen aufrufen; welche Artikel dort ankommen, entscheidet der
- * {@see CartRestorer} mit der Sichtbarkeit dieses Kanals.
+ * Gesucht wird über die Kennung und den Verkaufskanal, in dem der Warenkorb gespeichert wurde. In
+ * einem anderen Kanal verhält sich ein Verweis wie eine unbekannte Kennung, denn Preise,
+ * Sichtbarkeit und Sprache hängen am Kanal.
  */
 final class SharedCartLoader
 {

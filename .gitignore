@@ -1,12 +1,6 @@
 # ============================================================
-# .gitignore – RcOrderAttachment
+# .gitignore – RcCartSharing
 # ============================================================
-
-# Arbeitsmaterial des Entwicklers — gehört nicht ins Repository.
-# Liegt strukturell außerhalb des Plugin-Verzeichnisses; die Einträge bleiben
-# als Absicherung, falls doch etwas hineinrutscht.
-
-# Lokale Dev-Helper
 
 # IDE
 .idea/
@@ -25,14 +19,6 @@ var/
 node_modules/
 /src/Resources/app/administration/dist/
 
-# Das gebaute Storefront-JS und das Admin-Bundle werden BEWUSST mitgeliefert und sind deshalb
-# nicht ignoriert: Der Live-Server hat kein Node. Ohne diese Dateien käme das Upload-Feld auf
-# der Confirm-Seite ohne sein JavaScript an -- ein Feld, das nichts tut, und das fällt erst
-# auf, wenn ein Kunde eine Datei anhängen will.
-#   src/Resources/app/storefront/dist/     (Storefront-JS)
-#   src/Resources/public/administration/   (Admin-Bundle)
-# Frische prüfen: dist-freshness-check.sh im brief-done-gate baut neu und vergleicht.
-
 # OS
 .DS_Store
 Thumbs.db
@@ -46,13 +32,3 @@ secrets.json
 
 # composer.lock — Library-Plugins liefern keinen Lock mit
 composer.lock
-
-# Die Ausnahmeliste des Spurenprüfers gehört ins Repository.
-#
-# Die globale Ausschlussliste filtert `.ai-trace-ignore` — gedacht war die Kopie, die
-# früher in jedem Projekt lag. Sie versteckt aber auch diese eine, die der Prüfer
-# tatsächlich liest. Der Fehler fällt nicht auf: Er liest sie aus dem
-# Arbeitsverzeichnis, meldet sauber, und man hält die Ausnahme für eingetragen —
-# während jeder Klon und jeder Lauf im Fließband ohne sie dasteht. Am 2026-09-07 traf
-# das 17 von 22 Erweiterungen.
-!.ai-trace-ignore
