@@ -13,7 +13,7 @@ use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 
 /**
  * Umbenennen und Löschen aus dem Kundenkonto. Die Kennung kommt aus einem Formular und lässt sich beliebig
- * verändern; bisher brach ein Wert, der keine Kennung ist, in `new Criteria([$id])` mit Fehler 500 ab.
+ * verändern; ungeprüft bräche ein Wert, der keine Kennung ist, in `new Criteria([$id])` mit Fehler 500 ab.
  */
 #[CoversClass(SharedCartManager::class)]
 final class SharedCartManagerTest extends TestCase
