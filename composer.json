@@ -2,7 +2,7 @@
     "name": "ruhrcoder/rc-cart-sharing",
     "description": "Shopware 6 Plugin — Warenkorb speichern und über einen Verweis teilen, ohne die Angaben der Positionen zu verlieren.",
     "type": "shopware-platform-plugin",
-    "license": "MIT",
+    "license": "proprietary",
     "version": "0.2.1",
     "authors": [
         {"name": "René Schustek", "email": "info@ruhrcoder.de", "homepage": "https://ruhrcoder.de", "role": "Developer"}
